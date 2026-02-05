@@ -18,6 +18,16 @@ export enum ContentStatus {
 
 export type AgentName = 'agent_mastermind' | 'agent_data_scout' | 'agent_competitor_analyzer' | 'agent_seo_extractor' | 'agent_copywriter_agent' | 'agent_visual_designer' | 'agent_data_quality_inspector' | 'agent_design_builder' | 'agent_performance_optimizer' | 'agent_video_scriptwriter' | 'agent_seo_strategist' | 'agent_personalization' | 'agent_command' | 'agent_internal_linker' | 'agent_news_aggregator';
 
+// Command Bar Result Type
+export interface CommandBarResult {
+    action: 'UI_UPDATE' | 'SEARCH' | 'NAVIGATE' | 'ACTION';
+    payload?: {
+        name?: string;
+        args?: Record<string, unknown>;
+        [key: string]: unknown;
+    };
+}
+
 // This is now obsolete and replaced by the new Task type
 // export interface AgentStatus {
 //   status: 'pending' | 'running' | 'completed' | 'failed';
@@ -241,6 +251,7 @@ export interface ArticleAnalysisResult {
 // Base Content type reflecting the backend DB model
 interface BaseContent {
     id: number;
+    tempId?: string; // Temporary ID for optimistic UI updates
     title: string;
     status: ContentStatus;
     score: number;

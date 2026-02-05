@@ -283,7 +283,7 @@ const ContentHub: React.FC<ContentHubProps> = ({ onViewArticle, onDeleteArticle,
                  {activeTab === 'articles' ? (
                      articles.length > 0 ? (
                         <div className="p-4 space-y-3">
-                            {articles.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(article => <ArticleItem key={article.id > 0 ? article.id : (article as any).tempId} article={article} />)}
+                            {articles.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(article => <ArticleItem key={article.id > 0 ? article.id : article.tempId} article={article} />)}
                         </div>
                      ) : (
                         <div className="text-center p-12 text-gray-500">

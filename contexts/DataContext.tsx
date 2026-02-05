@@ -67,7 +67,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, isAdmin })
         ]);
 
         // Race the API against the timeout
-        const result: any = await Promise.race([apiPromise, timeoutPromise]);
+        const result = await Promise.race([apiPromise, timeoutPromise]) as PromiseSettledResult<unknown>[];
 
         const [productsResponse, articlesResponse, guidesResponse] = result;
 
@@ -75,7 +75,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, isAdmin })
         const fetchedArticles = articlesResponse.status === 'fulfilled' ? articlesResponse.value : [];
         const fetchedGuides = guidesResponse.status === 'fulfilled' ? guidesResponse.value : [];
         
-        const hasApiErrors = [productsResponse, articlesResponse, guidesResponse].some((res: any) => res.status === 'rejected');
+        const hasApiErrors = [productsResponse, articlesResponse, guidesResponse].some((res: PromiseSettledResult<unknown>) => res.status === 'rejected');
 
         // If the database is completely empty OR there were API errors preventing data fetch,
         // populate with mock data for demo purposes.
@@ -97,9 +97,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, isAdmin })
             setArticles(fetchedArticles.sort((a: Article, b: Article) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
             setGuides(fetchedGuides.sort((a: Guide, b: Guide) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         // This block catches the TIMEOUT error or critical failures
-        console.warn("Data fetch timed out or failed:", error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.warn("Data fetch timed out or failed:", err);
         
         if (error.message === "TIMEOUT") {
             showNotification('Connection slow. Switched to Demo Mode for speed.', 'info');

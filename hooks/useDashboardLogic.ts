@@ -177,18 +177,18 @@ export const useDashboardLogic = () => {
         if (!isConfigured) { showNotification('Configure AI provider settings first.', 'info'); return; }
         
         const tempId = `temp_prod_${Date.now()}`;
-        const tempProduct = { id: -1, tempId, title: productName, affiliate_url: affiliateUrl, status: ContentStatus.ANALYZING, score: 0, keywords: '', created_at: new Date().toISOString() } as any;
+        const tempProduct: Product = { id: -1, tempId, title: productName, affiliate_url: affiliateUrl, status: ContentStatus.ANALYZING, score: 0, keywords: '', created_at: new Date().toISOString() };
         addProduct(tempProduct);
 
         try {
             const { task_id, content_id } = await mastermindService.createAnalysisTask(productName, affiliateUrl);
             const initialTask = await mastermindService.getTaskStatus(task_id);
-            setProducts(prev => prev.map(p => (p as any).tempId === tempId ? { ...p, id: content_id, tempId: undefined, activeTask: initialTask } : p));
+            setProducts(prev => prev.map(p => p.tempId === tempId ? { ...p, id: content_id, tempId: undefined, activeTask: initialTask } : p));
             if (initialTask) setTaskForModal(initialTask);
             addTask(task_id);
         } catch (error) {
             showNotification(`Error: ${error instanceof Error ? error.message : "Failed"}`, 'error');
-            setProducts(prev => prev.filter(p => (p as any).tempId !== tempId));
+            setProducts(prev => prev.filter(p => p.tempId !== tempId));
             setTaskForModal(null);
         }
     };
@@ -196,15 +196,15 @@ export const useDashboardLogic = () => {
     const handleGenerateArticle = async (topic: string) => {
         if (!isConfigured) { showNotification('Configure AI provider settings first.', 'info'); return null; }
         const tempId = `temp_art_${Date.now()}`;
-        addArticle({ id: -1, tempId, title: topic, status: ContentStatus.GENERATING, created_at: new Date().toISOString(), score: 0, keywords: '' } as any);
+        addArticle({ id: -1, tempId, title: topic, status: ContentStatus.GENERATING, created_at: new Date().toISOString(), score: 0, keywords: '' } as Article);
 
         try {
             const { task_id, content_id } = await mastermindService.generateTrendArticle(topic);
-            setArticles(prev => prev.map(a => (a as any).tempId === tempId ? { ...a, id: content_id, tempId: undefined } : a));
+            setArticles(prev => prev.map(a => a.tempId === tempId ? { ...a, id: content_id, tempId: undefined } : a));
             addTask(task_id);
             return { taskId: task_id, contentId: content_id };
         } catch (error) {
-            setArticles(prev => prev.filter(a => (a as any).tempId !== tempId));
+            setArticles(prev => prev.filter(a => a.tempId !== tempId));
             showNotification(`Error: ${error instanceof Error ? error.message : "Failed"}`, 'error');
             return null;
         }
@@ -286,7 +286,7 @@ export const useDashboardLogic = () => {
             onGetSuggestions: async (p: Product) => executeProductAction(p, 'Suggestions', () => mastermindService.generateImprovementSuggestions(p.id), 'suggestionsLoading'),
             onEnhanceProduct: async (p: Product, f: string) => executeProductAction(p, 'Enhancement', () => mastermindService.enhanceHtmlContent(p.id, f), 'enhancementLoading'),
             onGenerateAbTest: async (p: Product) => executeProductAction(p, 'A/B Test', () => mastermindService.generateAbTest(p, p.performanceMetrics!), undefined),
-            onGenerateVisuals: async (p: Product, prompt: string, type: any) => executeProductAction(p, 'Visuals', () => mastermindService.generateVisuals(p.id, prompt, type), 'visualsLoading'),
+            onGenerateVisuals: async (p: Product, prompt: string, type: 'image' | 'video' | 'infographic') => executeProductAction(p, 'Visuals', () => mastermindService.generateVisuals(p.id, prompt, type), 'visualsLoading'),
             onGenerateVideoScript: async (p: Product) => executeProductAction(p, 'Video Script', () => mastermindService.generateVideoScript(p.id), 'scriptLoading'),
             onRefreshProduct: async (p: Product) => executeProductAction(p, 'Refresh', () => mastermindService.refreshProductAnalysis(p.id), undefined),
             

@@ -48,14 +48,14 @@ const Dashboard: React.FC<DashboardProps> = ({ publishedCount, onLogout }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [setters]);
 
-    const handleCommandBarResult = (result: any) => {
+    const handleCommandBarResult = (result: CommandBarResult) => {
         setters.setIsCommandBarOpen(false);
         if (result.action === 'UI_UPDATE') {
-            const { name, args } = result.payload;
-            if (name === 'navigateTo' && args.tab) setters.setActiveTab(args.tab);
+            const { name, args } = result.payload || {};
+            if (name === 'navigateTo' && args?.tab) setters.setActiveTab(args.tab as string);
             if (name === 'findContent') {
-                if (args.status) setters.setFilterStatus(args.status);
-                if (args.term) setters.setSearchTerm(args.term);
+                if (args?.status) setters.setFilterStatus(args.status as string);
+                if (args?.term) setters.setSearchTerm(args.term as string);
                 setters.setActiveTab('products');
             }
         }

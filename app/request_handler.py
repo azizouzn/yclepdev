@@ -1,13 +1,14 @@
 import asyncio
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, Awaitable
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from collections import deque
 import heapq
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class RequestHandler:
         logger.info(f"Task {task_id} submitted (type: {task_type}, priority: {priority})")
         return task_id
 
-    async def process_tasks(self, processor: Callable, max_tasks: Optional[int] = None):
+    async def process_tasks(self, processor: Callable, max_tasks: Optional[int] = None, max_retries: int = 3):
         processed_count = 0
         while not self._shutdown:
             if max_tasks and processed_count >= max_tasks:
@@ -95,9 +96,19 @@ class RequestHandler:
                 task.updated_at = time.time()
                 self.active_tasks[task.id] = task
 
+            await self._execute_task_with_retry(task, processor, max_retries)
+            processed_count += 1
+
+        logger.info(f"Task processing completed. Processed {processed_count} tasks")
+
+    async def _execute_task_with_retry(self, task: Task, processor: Callable, max_retries: int):
+        """Execute task with exponential backoff retry logic"""
+        attempt = 0
+        while attempt < max_retries:
             try:
-                logger.info(f"Processing task {task.id}")
+                logger.info(f"Processing task {task.id} (attempt {attempt + 1}/{max_retries})")
                 result = await processor(task)
+                
                 async with self._lock:
                     task.status = TaskStatus.COMPLETED
                     task.result = result
@@ -107,24 +118,39 @@ class RequestHandler:
                     self.stats["completed_tasks"] += 1
 
                 if task.callback:
-                    try:
-                        await task.callback(task)
-                    except Exception as e:
-                        logger.error(f"Callback failed for task {task.id}: {str(e)}")
+                    await self._execute_callback(task)
 
                 logger.info(f"Task {task.id} completed successfully")
+                return
             except Exception as e:
-                async with self._lock:
-                    task.status = TaskStatus.FAILED
-                    task.error = str(e)
-                    task.updated_at = time.time()
-                    del self.active_tasks[task.id]
-                    self.stats["failed_tasks"] += 1
-                logger.error(f"Task {task.id} failed: {str(e)}")
-            finally:
-                processed_count += 1
+                attempt += 1
+                if attempt >= max_retries:
+                    async with self._lock:
+                        task.status = TaskStatus.FAILED
+                        task.error = str(e)
+                        task.updated_at = time.time()
+                        del self.active_tasks[task.id]
+                        self.stats["failed_tasks"] += 1
+                    logger.error(f"Task {task.id} failed after {max_retries} attempts: {str(e)}")
+                    return
+                
+                # Exponential backoff: 1s, 2s, 4s
+                backoff_delay = (2 ** (attempt - 1))
+                logger.warning(f"Task {task.id} attempt {attempt} failed, retrying in {backoff_delay}s: {str(e)}")
+                await asyncio.sleep(backoff_delay)
 
-        logger.info(f"Task processing completed. Processed {processed_count} tasks")
+    async def _execute_callback(self, task: Task):
+        """Execute task callback with error handling"""
+        if not task.callback:
+            return
+        try:
+            if asyncio.iscoroutinefunction(task.callback):
+                await task.callback(task)
+            else:
+                task.callback(task)
+            logger.debug(f"Callback executed successfully for task {task.id}")
+        except Exception as e:
+            logger.error(f"Callback failed for task {task.id}: {str(e)}")
 
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
         if task_id not in self.task_registry:
@@ -145,6 +171,66 @@ class RequestHandler:
 
     async def shutdown(self):
         self._shutdown = True
-        while self.active_tasks:
+        logger.info("Initiating RequestHandler shutdown...")
+        
+        # Wait for active tasks to complete (max 30 seconds)
+        timeout = 30
+        start_time = time.time()
+        while self.active_tasks and (time.time() - start_time) < timeout:
+            remaining = len(self.active_tasks)
+            logger.info(f"Waiting for {remaining} active tasks to complete...")
             await asyncio.sleep(1)
+        
+        if self.active_tasks:
+            logger.warning(f"Shutdown timeout: {len(self.active_tasks)} tasks still active")
+        
         logger.info("RequestHandler shutdown complete")
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get handler statistics"""
+        completed = self.stats["completed_tasks"]
+        failed = self.stats["failed_tasks"]
+        total = self.stats["total_tasks"]
+        
+        success_rate = (completed / total * 100) if total > 0 else 0
+        
+        return {
+            "total_tasks": total,
+            "completed_tasks": completed,
+            "failed_tasks": failed,
+            "active_tasks": len(self.active_tasks),
+            "queued_tasks": len(self.task_queue),
+            "success_rate": round(success_rate, 2),
+            "max_concurrent_tasks": self.max_concurrent_tasks
+        }
+
+    def cancel_task(self, task_id: str) -> bool:
+        """Cancel a task if it hasn't started processing"""
+        if task_id not in self.task_registry:
+            return False
+        
+        task = self.task_registry[task_id]
+        if task.status == TaskStatus.QUEUED:
+            task.status = TaskStatus.CANCELLED
+            logger.info(f"Task {task_id} cancelled")
+            return True
+        
+        return False
+
+    def get_completed_tasks(self, limit: int = 10) -> list:
+        """Get recent completed tasks"""
+        tasks_list = list(self.completed_tasks)[-limit:]
+        return [self._task_to_dict(task) for task in tasks_list]
+
+    def _task_to_dict(self, task: Task) -> Dict[str, Any]:
+        """Convert task to dictionary representation"""
+        return {
+            "task_id": task.id,
+            "type": task.type,
+            "status": task.status.value,
+            "priority": task.priority,
+            "processing_time": task.updated_at - task.created_at,
+            "created_at": datetime.fromtimestamp(task.created_at).isoformat(),
+            "result_summary": str(task.result)[:100] if task.result else None,
+            "error": task.error
+        }
