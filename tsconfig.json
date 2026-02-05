@@ -23,8 +23,7 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": false,
-    "outDir": "./dist",
+    "noEmit": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strictNullChecks": false,
