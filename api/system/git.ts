@@ -22,21 +22,17 @@ const executeGitCommand = async (command: string, args: string[]): Promise<{ suc
 
     return new Promise((resolve) => {
         try {
+            // Redirect stderr to /dev/null to prevent "not a git repository" errors from appearing
             const child = spawn(command, args, { 
-                stdio: ['pipe', 'pipe', 'pipe'],
+                stdio: ['ignore', 'pipe', 'ignore'], // ignore stderr
                 timeout: 5000,
                 detached: false
             });
 
             let stdout = '';
-            let stderr = '';
 
             child.stdout?.on('data', (data) => {
                 stdout += data.toString();
-            });
-
-            child.stderr?.on('data', (data) => {
-                stderr += data.toString();
             });
 
             child.on('error', (error) => {
@@ -47,7 +43,7 @@ const executeGitCommand = async (command: string, args: string[]): Promise<{ suc
                 if (code === 0) {
                     resolve({ success: true, output: stdout });
                 } else {
-                    resolve({ success: false, error: stderr || `Command failed with code ${code}` });
+                    resolve({ success: false, error: `Command failed with code ${code}` });
                 }
             });
 
@@ -109,3 +105,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(400).json({ message: 'Invalid action.' });
 }
+
+export default handler;
