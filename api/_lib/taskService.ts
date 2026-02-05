@@ -1,6 +1,6 @@
 
 import { query } from '../_db';
-import type { Task, TaskError, TaskMetrics, ExecutionPlan } from '../../types';
+import type { Task, TaskError, TaskMetrics, ExecutionPlan } from '../types';
 
 export const taskService = {
     create: async (taskId: string, contentId: number, agent: string, plan?: ExecutionPlan): Promise<Task> => {

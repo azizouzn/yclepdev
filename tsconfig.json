@@ -26,7 +26,10 @@
     "noEmit": false,
     "outDir": "./dist",
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strict": false
   },
   "include": [
     "**/*.ts",

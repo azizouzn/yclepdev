@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { Article } from '../../types';
+import type { Article } from '../types';
 import SparklesIcon from './icons/SparklesIcon';
 import ArrowPathIcon from './icons/ArrowPathIcon';
 

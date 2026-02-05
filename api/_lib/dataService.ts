@@ -1,6 +1,6 @@
 
 import { query } from '../_db';
-import { ContentStatus, type Product, type Article, type BrandPersona, type ApiProviderSettings, SystemEvent, SystemEventType, Guide } from '../../types';
+import { ContentStatus, type Product, type Article, type BrandPersona, type ApiProviderSettings, SystemEvent, SystemEventType, Guide } from '../types';
 
 // --- Rate Limiting (Using a simplified in-memory approach or DB if strict) ---
 // For simplicity and speed, we'll use a simple in-memory map for rate limits 

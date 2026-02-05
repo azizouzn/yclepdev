@@ -5,7 +5,7 @@ import * as dataService from './_lib/dataService';
 import * as geminiService from './_lib/geminiService';
 import { taskService } from './_lib/taskService';
 import { startFullAnalysis, startArticleGeneration } from './_lib/agentOrchestrator';
-import type { CommandBarResult } from '../types';
+import type { CommandBarResult } from './types';
 
 const CommandSchema = z.object({
     command: z.string().min(1, "Command is required"),

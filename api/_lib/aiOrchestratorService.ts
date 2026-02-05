@@ -1,8 +1,8 @@
 
 import * as geminiService from './geminiService';
 import * as dataService from './dataService';
-import type { ApiProviderSettings } from '../../types';
-import { logger } from '../../utils/logger';
+import type { ApiProviderSettings } from '../types';
+import { logger } from '../utils/logger';
 
 // ===================================================================================
 // AI Orchestrator Service (The Mastermind's "Brain")

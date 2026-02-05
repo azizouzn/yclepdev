@@ -2,11 +2,11 @@
 
 
 
-import { ContentStatus, type AnalysisResult, type Article, type CompetitorAnalysis, type SeoMetadata, type DistributionAssets, type ArticleAnalysisResult, TaskError, VideoScript, Guide, SeoStrategyReport, ExecutionPlan, AgentName, ProductAnalysis, DataQualityMetrics, NewsItem, EditorialReview } from '../../types';
-import * as dataService from './dataService';
-import { taskService } from './taskService';
-import * as aiOrchestrator from './aiOrchestratorService';
-import * as geminiService from './geminiService';
+import { ContentStatus, type AnalysisResult, type Article, type CompetitorAnalysis, type SeoMetadata, type DistributionAssets, type ArticleAnalysisResult, TaskError, VideoScript, Guide, SeoStrategyReport, ExecutionPlan, AgentName, ProductAnalysis, DataQualityMetrics, NewsItem, EditorialReview } from '../types';
+import * as dataService from '../_lib/dataService';
+import { taskService } from '../_lib/taskService';
+import * as aiOrchestrator from '../_lib/aiOrchestratorService';
+import * as geminiService from '../_lib/geminiService';
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_BASE = 500; // ms

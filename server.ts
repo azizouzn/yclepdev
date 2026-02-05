@@ -77,7 +77,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Helper to wrap Vercel-style async handlers for Express and catch errors
-const wrap = (handler: (req: Request, res: Response) => Promise<unknown> | unknown) => {
+const wrap = (handler: (req: any, res: any) => Promise<unknown> | unknown) => {
   return async (req: Request, res: Response) => {
     try {
       await Promise.resolve(handler(req, res));

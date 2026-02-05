@@ -53,8 +53,8 @@ export const useDashboardLogic = () => {
                 }
             } 
             // 2. Sub-Task Handlers (Typed Payloads)
-            else if (task.result.type && task.result.payload) {
-                const { type, payload } = task.result;
+            else if (task.result && typeof task.result === 'object' && 'type' in task.result && 'payload' in task.result) {
+                const { type, payload } = task.result as any;
                 switch (type) {
                     case 'suggestion_result':
                         if (payload.content_type === 'product') {
@@ -286,7 +286,7 @@ export const useDashboardLogic = () => {
             onGetSuggestions: async (p: Product) => executeProductAction(p, 'Suggestions', () => mastermindService.generateImprovementSuggestions(p.id), 'suggestionsLoading'),
             onEnhanceProduct: async (p: Product, f: string) => executeProductAction(p, 'Enhancement', () => mastermindService.enhanceHtmlContent(p.id, f), 'enhancementLoading'),
             onGenerateAbTest: async (p: Product) => executeProductAction(p, 'A/B Test', () => mastermindService.generateAbTest(p, p.performanceMetrics!), undefined),
-            onGenerateVisuals: async (p: Product, prompt: string, type: 'image' | 'video' | 'infographic') => executeProductAction(p, 'Visuals', () => mastermindService.generateVisuals(p.id, prompt, type), 'visualsLoading'),
+            onGenerateVisuals: async (p: Product, prompt: string, type: 'featured' | 'banner') => executeProductAction(p, 'Visuals', () => mastermindService.generateVisuals(p.id, prompt, type), 'visualsLoading'),
             onGenerateVideoScript: async (p: Product) => executeProductAction(p, 'Video Script', () => mastermindService.generateVideoScript(p.id), 'scriptLoading'),
             onRefreshProduct: async (p: Product) => executeProductAction(p, 'Refresh', () => mastermindService.refreshProductAnalysis(p.id), undefined),
             
