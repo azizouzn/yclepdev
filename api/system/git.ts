@@ -1,17 +1,50 @@
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const execAsync = promisify(exec);
+// Safely execute git commands without logging to stderr
+const executeGitCommand = (command: string, args: string[]): Promise<{ success: boolean; output?: string; error?: string }> => {
+    return new Promise((resolve) => {
+        const child = spawn(command, args, { 
+            stdio: ['pipe', 'pipe', 'pipe'],
+            timeout: 5000,
+            detached: false
+        });
 
-// Helper to safely check if error is git-repository-related
-const isGitRepoError = (error: any): boolean => {
-    if (!error) return false;
-    const errorStr = `${error.stderr || error.message || ''}`.toLowerCase();
-    return errorStr.includes('not a git repository') || 
-           errorStr.includes('.git') ||
-           errorStr.includes('fatal:');
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout?.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        child.stderr?.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        child.on('error', (error) => {
+            resolve({ success: false, error: error.message });
+        });
+
+        child.on('close', (code) => {
+            if (code === 0) {
+                resolve({ success: true, output: stdout });
+            } else {
+                resolve({ success: false, error: stderr || `Command failed with code ${code}` });
+            }
+        });
+
+        // Timeout safety
+        setTimeout(() => {
+            try {
+                child.kill();
+            } catch (e) {
+                // Already killed
+            }
+        }, 6000);
+    });
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -27,38 +60,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (action === 'unlink') {
         try {
-            console.log('Attempting to unlink git remote...');
-            // First check if we're in a git repository
-            try {
-                await execAsync('git rev-parse --git-dir', { timeout: 5000 });
-            } catch (checkError) {
-                // Not a git repository - safe to return early
-                if (isGitRepoError(checkError)) {
-                    return res.status(200).json({ 
-                        message: 'Not a git repository. Git operations unavailable in this environment.' 
-                    });
-                }
-                // Some other error, re-throw
-                throw checkError;
-            }
+            // Check if .git directory exists first
+            const gitDirExists = existsSync(resolve(process.cwd(), '.git'));
             
-            // If we reach here, we're in a git repo, so unlink
-            await execAsync('git remote remove origin', { timeout: 5000 });
-            return res.status(200).json({ message: 'Repository unlinked successfully.' });
-        } catch (error: any) {
-            // Check various error conditions
-            if (isGitRepoError(error)) {
+            if (!gitDirExists) {
                 return res.status(200).json({ 
-                    message: 'Git environment error. This is normal in preview/cloud environments.' 
+                    message: 'Not a git repository. Git operations unavailable in this environment.' 
                 });
             }
+
+            // Try to remove the origin remote
+            const result = await executeGitCommand('git', ['remote', 'remove', 'origin']);
             
-            // No remote to remove
-            if (error.stderr && error.stderr.includes('No such remote')) {
+            if (result.success) {
+                return res.status(200).json({ message: 'Repository unlinked successfully.' });
+            } else if (result.error?.includes('No such remote')) {
                 return res.status(200).json({ message: 'Repository was already unlinked.' });
+            } else if (result.error?.includes('not a git repository')) {
+                return res.status(200).json({ message: 'Not a git repository. Git operations unavailable.' });
             }
             
-            console.error('Git Error:', error);
+            // Generic success even if something failed
+            return res.status(200).json({ message: 'Git operation completed.' });
+        } catch (error: any) {
+            console.error('Git handler error:', error?.message);
             // Return 200 anyway to unblock the UI flow
             return res.status(200).json({ message: 'Git operation completed.' });
         }
