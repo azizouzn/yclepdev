@@ -1,49 +1,67 @@
 
-import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Only import spawn if we're not in a preview/non-git environment
+let spawn: any = null;
+try {
+    const childProcess = require('child_process');
+    spawn = childProcess.spawn;
+} catch (e) {
+    // child_process not available - likely in v0 preview
+    spawn = null;
+}
+
 // Safely execute git commands without logging to stderr
-const executeGitCommand = (command: string, args: string[]): Promise<{ success: boolean; output?: string; error?: string }> => {
+const executeGitCommand = async (command: string, args: string[]): Promise<{ success: boolean; output?: string; error?: string }> => {
+    // If spawn is not available, don't try to use it
+    if (!spawn) {
+        return { success: false, error: 'Git not available in this environment' };
+    }
+
     return new Promise((resolve) => {
-        const child = spawn(command, args, { 
-            stdio: ['pipe', 'pipe', 'pipe'],
-            timeout: 5000,
-            detached: false
-        });
+        try {
+            const child = spawn(command, args, { 
+                stdio: ['pipe', 'pipe', 'pipe'],
+                timeout: 5000,
+                detached: false
+            });
 
-        let stdout = '';
-        let stderr = '';
+            let stdout = '';
+            let stderr = '';
 
-        child.stdout?.on('data', (data) => {
-            stdout += data.toString();
-        });
+            child.stdout?.on('data', (data) => {
+                stdout += data.toString();
+            });
 
-        child.stderr?.on('data', (data) => {
-            stderr += data.toString();
-        });
+            child.stderr?.on('data', (data) => {
+                stderr += data.toString();
+            });
 
-        child.on('error', (error) => {
-            resolve({ success: false, error: error.message });
-        });
+            child.on('error', (error) => {
+                resolve({ success: false, error: error.message });
+            });
 
-        child.on('close', (code) => {
-            if (code === 0) {
-                resolve({ success: true, output: stdout });
-            } else {
-                resolve({ success: false, error: stderr || `Command failed with code ${code}` });
-            }
-        });
+            child.on('close', (code) => {
+                if (code === 0) {
+                    resolve({ success: true, output: stdout });
+                } else {
+                    resolve({ success: false, error: stderr || `Command failed with code ${code}` });
+                }
+            });
 
-        // Timeout safety
-        setTimeout(() => {
-            try {
-                child.kill();
-            } catch (e) {
-                // Already killed
-            }
-        }, 6000);
+            // Timeout safety
+            setTimeout(() => {
+                try {
+                    child.kill();
+                } catch (e) {
+                    // Already killed
+                }
+            }, 6000);
+        } catch (error: any) {
+            resolve({ success: false, error: error?.message || 'Failed to spawn process' });
+        }
     });
 };
 
