@@ -16,9 +16,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "latest",
+    "@vercel/node": "^5.5.30",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "@google/genai": "latest",
     "express": "^4.19.2",
     "pg": "^8.11.3",
     "react": "^18.2.0",

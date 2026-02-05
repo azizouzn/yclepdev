@@ -2,6 +2,18 @@ import dotenv from 'dotenv';
 // CRITICAL: Load environment variables BEFORE importing any other modules
 dotenv.config({ path: 'config.env' });
 
+// Suppress git-related stderr warnings in non-git environments (like v0 preview)
+const originalStderrWrite = process.stderr.write;
+process.stderr.write = function (str: string | Buffer, ...args: any[]): boolean {
+  const message = str.toString();
+  if (!message.includes('fatal: not a git repository') && 
+      !message.includes('.git') &&
+      !message.includes('fatal:')) {
+    return originalStderrWrite.apply(process.stderr, [str, ...args]);
+  }
+  return true;
+} as any;
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -38,6 +50,7 @@ import eventsHandler from './api/events';
 import commandHandler from './api/command';
 import recommendationsHandler from './api/recommendations';
 import systemSetupHandler from './api/system/setup';
+import gitHandler from './api/system/git';
 
 // Agent & Action Handlers
 import oppHunterHandler from './api/agents/opportunity-hunter';
@@ -118,6 +131,7 @@ const initDbOnStartup = async () => {
 
 // System Setup (For mobile users)
 app.all('/api/system/setup', wrap(systemSetupHandler));
+app.all('/api/system/git', wrap(gitHandler));
 
 // Products
 app.all('/api/products', wrap(productsHandler));

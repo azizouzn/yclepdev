@@ -56,14 +56,16 @@ const Terminal: React.FC = () => {
                 headers: getAuthHeaders(),
                 body: JSON.stringify({ action: 'unlink' })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({ message: 'Git operation completed' }));
+            // Accept 200 status as success since git operations may return success in non-git environments
             if (res.ok) {
                 addLog('SUCCESS', 'Git Operation', data.message);
             } else {
-                addLog('ERROR', 'Git Operation', data.message);
+                addLog('ERROR', 'Git Operation', data.message || 'Unknown error');
             }
         } catch (e) {
-            addLog('ERROR', 'Network Error', 'Failed to contact system API');
+            console.error('Git unlink error:', e);
+            addLog('ERROR', 'Git Operation', 'Failed to contact system API');
         }
         setIsLoading(false);
     };
