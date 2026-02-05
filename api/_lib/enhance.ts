@@ -1,11 +1,11 @@
 
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as dataService from '../../_lib/dataService';
-import { taskService } from '../../_lib/taskService';
-import * as aiOrchestrator from '../../_lib/aiOrchestratorService';
-import type { TaskError } from '../../../types';
-import { checkAuth } from '../../_lib/auth';
+import * as dataService from './_lib/dataService';
+import { taskService } from './_lib/taskService';
+import * as aiOrchestrator from './_lib/aiOrchestratorService';
+import type { TaskError } from '../types';
+import { checkAuth } from './_lib/auth';
 
 const runAgent = async (taskId: string, articleId: number, feedback: string) => {
     const startTime = Date.now();

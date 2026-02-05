@@ -9,7 +9,6 @@ import ArrowRightIcon from './icons/ArrowRightIcon';
 import PhotoIcon from './icons/PhotoIcon';
 import SeoHead from './SeoHead';
 import ClockIcon from './icons/ClockIcon';
-import CalendarIcon from './icons/CalendarIcon';
 import ShareIcon from './icons/ShareIcon';
 import LightBulbIcon from './icons/LightBulbIcon';
 

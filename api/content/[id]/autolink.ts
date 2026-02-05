@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as dataService from '../../_lib/dataService';
 import { taskService } from '../../_lib/taskService';
 import { runAutoLinking } from '../../_lib/agentOrchestrator';
-import type { TaskError } from '../../../types';
+import type { TaskError } from '../../types';
 import { checkAuth } from '../../_lib/auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

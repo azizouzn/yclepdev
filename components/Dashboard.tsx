@@ -20,6 +20,7 @@ import SeoStrategyReportModal from './SeoStrategyReportModal';
 import { useDashboardLogic } from '../hooks/useDashboardLogic';
 import { useSettings } from '../contexts/SettingsContext';
 import { useData } from '../contexts/DataContext';
+import type { CommandBarResult } from '../types';
 import Squares2x2Icon from './icons/Squares2x2Icon';
 import NewspaperIcon from './icons/NewspaperIcon';
 import LightBulbIcon from './icons/LightBulbIcon';

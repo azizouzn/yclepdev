@@ -71,15 +71,15 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children, isAdmin })
 
         const [productsResponse, articlesResponse, guidesResponse] = result;
 
-        const fetchedProducts = productsResponse.status === 'fulfilled' ? productsResponse.value : [];
-        const fetchedArticles = articlesResponse.status === 'fulfilled' ? articlesResponse.value : [];
-        const fetchedGuides = guidesResponse.status === 'fulfilled' ? guidesResponse.value : [];
+        const fetchedProducts = productsResponse.status === 'fulfilled' ? (productsResponse.value as Product[]) : [];
+        const fetchedArticles = articlesResponse.status === 'fulfilled' ? (articlesResponse.value as Article[]) : [];
+        const fetchedGuides = guidesResponse.status === 'fulfilled' ? (guidesResponse.value as Guide[]) : [];
         
         const hasApiErrors = [productsResponse, articlesResponse, guidesResponse].some((res: PromiseSettledResult<unknown>) => res.status === 'rejected');
 
         // If the database is completely empty OR there were API errors preventing data fetch,
         // populate with mock data for demo purposes.
-        if ((fetchedProducts.length === 0 && fetchedArticles.length === 0 && fetchedGuides.length === 0) || hasApiErrors) {
+        if (((fetchedProducts as Product[]).length === 0 && (fetchedArticles as Article[]).length === 0 && (fetchedGuides as Guide[]).length === 0) || hasApiErrors) {
             if (hasApiErrors) {
                 console.warn("API fetch issues detected, switching to demo mode.");
             } else {

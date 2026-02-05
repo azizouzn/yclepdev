@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { ContentStatus } from '../../types';
-import type { Product, Competitor, ProductAnalysis, CompetitorAnalysis, SeoMetadata, DistributionAssets, AnalysisResult, ArticleAnalysisResult, BrandPersona, Opportunity, AbTest, PerformanceMetrics, DataQualityMetrics, FactualStatement, Evidence, VideoScript, SeoStrategyReport, ExecutionPlan, AgentName, NewsItem, EditorialReview } from '../../types';
+import { ContentStatus } from '../types';
+import type { Product, Competitor, ProductAnalysis, CompetitorAnalysis, SeoMetadata, DistributionAssets, AnalysisResult, ArticleAnalysisResult, BrandPersona, Opportunity, AbTest, PerformanceMetrics, DataQualityMetrics, FactualStatement, Evidence, VideoScript, SeoStrategyReport, ExecutionPlan, AgentName, NewsItem, EditorialReview } from '../types';
 
 let ai: GoogleGenAI | null = null;
 
