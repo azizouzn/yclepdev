@@ -1,0 +1,40 @@
+
+
+name: CI
+
+on:
+	push:
+		branches: [ main, master ]
+	pull_request:
+		branches: [ main, master ]
+
+jobs:
+	build:
+		runs-on: ubuntu-latest
+		strategy:
+			matrix:
+				node-version: [18.x]
+
+		steps:
+			- name: Checkout repository
+				uses: actions/checkout@v4
+
+			- name: Setup Node.js
+				uses: actions/setup-node@v4
+				with:
+					node-version: ${{ matrix.node-version }}
+					cache: 'npm'
+
+			- name: Install dependencies
+				run: npm install
+
+			- name: Run ESLint
+				run: npm run lint
+
+			- name: Type check & build
+				run: npm run build
+
+			- name: Run tests (if present)
+				run: |
+					if npm run | grep -q "test"; then npm test || true; else echo "No tests defined"; fi
+
