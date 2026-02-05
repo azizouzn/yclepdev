@@ -19,9 +19,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'unlink') {
         try {
             console.log('Attempting to unlink git remote...');
+            // First check if we're in a git repository
+            await execAsync('git rev-parse --git-dir');
+            // If we reach here, we're in a git repo, so unlink
             await execAsync('git remote remove origin');
             return res.status(200).json({ message: 'Repository unlinked successfully.' });
         } catch (error: any) {
+            // Check if the error is because we're not in a git repository
+            if (error.stderr && error.stderr.includes('not a git repository')) {
+                 return res.status(200).json({ message: 'Not a git repository. Git operations unavailable in this environment.' });
+            }
             // Even if it fails (e.g., no remote), we treat it as success for the user's peace of mind
             // unless it's a critical system error.
             if (error.stderr && error.stderr.includes('No such remote')) {
