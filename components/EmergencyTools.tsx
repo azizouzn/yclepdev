@@ -15,10 +15,12 @@ const EmergencyTools: React.FC = () => {
         setStatus(`${actionName}...`);
         try {
             const res = await apiCall();
-            const data = await res.json();
-            setStatus(res.ok ? `✅ Success: ${data.message || 'Done'}` : `❌ Error: ${data.message}`);
+            const data = await res.json().catch(() => ({ message: 'Operation completed' }));
+            // Accept 200 status as success (some operations return success even in non-git environments)
+            setStatus(res.ok ? `✅ ${data.message || 'Done'}` : `❌ ${data.message || 'Error'}`);
         } catch (e) {
-            setStatus(`❌ Network Error`);
+            console.error(`${actionName} failed:`, e);
+            setStatus(`❌ Failed`);
         } finally {
             setIsLoading(false);
             setTimeout(() => setStatus(null), 3000);

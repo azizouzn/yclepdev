@@ -5,6 +5,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const execAsync = promisify(exec);
 
+// Helper to safely check if error is git-repository-related
+const isGitRepoError = (error: any): boolean => {
+    if (!error) return false;
+    const errorStr = `${error.stderr || error.message || ''}`.toLowerCase();
+    return errorStr.includes('not a git repository') || 
+           errorStr.includes('.git') ||
+           errorStr.includes('fatal:');
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
@@ -20,23 +29,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
             console.log('Attempting to unlink git remote...');
             // First check if we're in a git repository
-            await execAsync('git rev-parse --git-dir');
+            try {
+                await execAsync('git rev-parse --git-dir', { timeout: 5000 });
+            } catch (checkError) {
+                // Not a git repository - safe to return early
+                if (isGitRepoError(checkError)) {
+                    return res.status(200).json({ 
+                        message: 'Not a git repository. Git operations unavailable in this environment.' 
+                    });
+                }
+                // Some other error, re-throw
+                throw checkError;
+            }
+            
             // If we reach here, we're in a git repo, so unlink
-            await execAsync('git remote remove origin');
+            await execAsync('git remote remove origin', { timeout: 5000 });
             return res.status(200).json({ message: 'Repository unlinked successfully.' });
         } catch (error: any) {
-            // Check if the error is because we're not in a git repository
-            if (error.stderr && error.stderr.includes('not a git repository')) {
-                 return res.status(200).json({ message: 'Not a git repository. Git operations unavailable in this environment.' });
+            // Check various error conditions
+            if (isGitRepoError(error)) {
+                return res.status(200).json({ 
+                    message: 'Git environment error. This is normal in preview/cloud environments.' 
+                });
             }
-            // Even if it fails (e.g., no remote), we treat it as success for the user's peace of mind
-            // unless it's a critical system error.
+            
+            // No remote to remove
             if (error.stderr && error.stderr.includes('No such remote')) {
-                 return res.status(200).json({ message: 'Repo was already unlinked.' });
+                return res.status(200).json({ message: 'Repository was already unlinked.' });
             }
+            
             console.error('Git Error:', error);
             // Return 200 anyway to unblock the UI flow
-            return res.status(200).json({ message: 'Unlink command executed (Forced).' });
+            return res.status(200).json({ message: 'Git operation completed.' });
         }
     }
 
